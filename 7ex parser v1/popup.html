@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7ex Parser</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    width: 400px;
+    min-height: 500px;
+    background: url('icons/bg.jpg') center center / cover no-repeat fixed;
+    color: #f4c2d0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+  }
+
+  /* Header */
+  .header {
+    background: rgba(10, 8, 12, 0.72);
+    border-bottom: 1px solid rgba(220, 130, 160, 0.2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-icon { width: 28px; height: 28px; border-radius: 6px; }
+  .header-title { font-size: 15px; font-weight: 700; color: #f9d4e0; }
+  .header-sub { font-size: 10px; color: #a07080; margin-top: 1px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #5a3040; margin-left: auto;
+    transition: background 0.3s;
+  }
+  .status-dot.active { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    background: rgba(10, 8, 12, 0.70);
+    border-bottom: 1px solid rgba(220, 130, 160, 0.15);
+  }
+  .tab {
+    flex: 1; padding: 9px 4px; text-align: center;
+    font-size: 11px; font-weight: 600; color: #8a6070;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: #d4a0b0; }
+  .tab.active { color: #f4a0b8; border-bottom-color: #f4a0b8; }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Sections */
+  .section { padding: 12px 16px; border-bottom: 1px solid rgba(200, 100, 130, 0.1); background: rgba(10, 8, 12, 0.65); }
+  .section-title {
+    font-size: 10px; font-weight: 700; color: #9a6878;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+  }
+
+  /* Controls */
+  .control-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  input[type="text"], input[type="number"], input[type="password"], textarea, select {
+    background: rgba(15, 10, 18, 0.85); border: 1px solid rgba(200, 100, 140, 0.3);
+    border-radius: 6px; color: #f4c2d0; padding: 8px 10px;
+    font-size: 12px; font-family: inherit; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+    border-color: #f4a0b8;
+  }
+  input[type="text"], input[type="number"], input[type="password"] { height: 34px; }
+  select { height: 34px; }
+  input.full { flex: 1; width: 100%; }
+  textarea { width: 100%; resize: vertical; min-height: 80px; }
+
+  /* Buttons */
+  .btn {
+    height: 34px; padding: 0 14px; border: none; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-primary { background: #f4a0b8; color: #1a0a10; }
+  .btn-primary:hover { background: #f9c2d0; }
+  .btn-primary:disabled { background: #3a2030; color: #7a5060; cursor: default; }
+  .btn-success { background: #22c55e; color: #0a0f1a; }
+  .btn-success:hover { background: #4ade80; }
+  .btn-success:disabled { background: #3a2030; color: #7a5060; cursor: default; }
+  .btn-danger { background: #ef4444; color: #fff; }
+  .btn-danger:hover { background: #f87171; }
+  .btn-danger:disabled { background: #3a2030; color: #7a5060; cursor: default; }
+  .btn-ghost {
+    background: transparent; color: #8a6070;
+    border: 1px solid rgba(200, 100, 140, 0.3);
+  }
+  .btn-ghost:hover { border-color: #f4a0b8; color: #f4a0b8; }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 11px; }
+
+  .start-stop-row {
+    display: flex; gap: 8px; margin-top: 8px;
+  }
+  .start-stop-row .btn { flex: 1; height: 36px; font-size: 13px; }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid rgba(200, 100, 130, 0.08);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { color: #d4a0b0; font-size: 12px; }
+  .toggle-sub { font-size: 10px; color: #8a6070; margin-top: 2px; }
+  input[type="checkbox"] {
+    width: 16px; height: 16px; accent-color: #f4a0b8; cursor: pointer;
+  }
+
+  /* Stats */
+  .stats-row {
+    display: flex; gap: 8px; padding: 10px 16px;
+    background: rgba(10, 8, 12, 0.65); border-bottom: 1px solid rgba(200, 100, 130, 0.1);
+  }
+  .stat-box {
+    flex: 1; text-align: center; background: rgba(20, 12, 18, 0.75);
+    border-radius: 6px; padding: 8px 4px;
+    border: 1px solid rgba(200, 100, 130, 0.12);
+  }
+  .stat-num { font-size: 18px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 9px; color: #8a6070; margin-top: 3px; text-transform: uppercase; }
+  .green { color: #22c55e; }
+  .red { color: #ef4444; }
+  .yellow { color: #f59e0b; }
+  .blue { color: #f4a0b8; }
+
+  /* Players list */
+  .players-header {
+    display: grid; grid-template-columns: minmax(0,1fr) 92px 54px 58px;
+    padding: 5px 12px; font-size: 9px; color: #6a4050;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(200, 100, 130, 0.1);
+  }
+  .players-list { max-height: 200px; overflow-y: auto; }
+  .player-row {
+    display: grid; grid-template-columns: minmax(0,1fr) 92px 54px 58px;
+    padding: 7px 12px; align-items: center;
+    border-bottom: 1px solid rgba(15, 10, 18, 0.6); transition: background 0.1s;
+  }
+  .player-row:hover { background: rgba(40, 20, 30, 0.5); }
+  .player-nick { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-value { text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
+  .player-value-main { font-size: 12px; font-weight: 700; line-height: 1.1; }
+  .player-value-sub { font-size: 9px; color: #8a6070; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .player-value.na { color: #5a3040; }
+  .player-value.na .player-value-sub { color: #6a4050; }
+  .player-time { font-size: 11px; text-align: right; color: #8a6070; }
+  .player-status { font-size: 10px; font-weight: 700; text-align: right; }
+
+  /* Status colors */
+  .player-row.passed .player-nick { color: #22c55e; }
+  .player-row.kicked .player-nick { color: #ef4444; opacity: 0.7; }
+  .player-row.checking .player-nick { color: #f59e0b; }
+  .player-row.whitelist .player-nick { color: #f4a0b8; }
+  .player-row.no-data .player-nick { color: #f59e0b; }
+  .status-passed { color: #22c55e; }
+  .status-kicked { color: #ef4444; }
+  .status-checking { color: #f59e0b; }
+  .status-whitelist { color: #f4a0b8; }
+  .status-nodata { color: #f59e0b; }
+
+  .empty-state {
+    padding: 30px; text-align: center; color: #5a3040; font-size: 12px;
+  }
+
+  /* Kick failed banner */
+  .kick-warn {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 6px; margin: 10px 16px; padding: 8px 12px;
+    font-size: 11px; color: #f87171; display: none;
+  }
+  .kick-warn.visible { display: flex; align-items: center; gap: 8px; }
+  .kick-warn-icon { font-size: 14px; }
+
+  /* Log */
+  .log-box {
+    height: 120px; overflow-y: auto; background: rgba(5, 3, 8, 0.85);
+    border-radius: 6px; padding: 8px; font-size: 11px;
+    font-family: 'Courier New', monospace; line-height: 1.6;
+  }
+  .log-entry { padding: 1px 0; }
+  .log-entry.error { color: #f87171; }
+  .log-entry.success { color: #4ade80; }
+  .log-entry.warn { color: #fbbf24; }
+  .log-entry.info { color: #c49098; }
+  .log-time { color: #5a3040; margin-right: 6px; }
+
+  /* Test result */
+  .test-result {
+    margin-top: 8px; padding: 8px 10px;
+    background: rgba(15, 10, 18, 0.85); border-radius: 6px;
+    font-size: 12px; color: #d4a0b0; min-height: 34px;
+  }
+
+  /* List tags */
+  .list-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(20, 12, 18, 0.75); border-radius: 4px;
+    padding: 4px 8px; margin: 3px; font-size: 11px;
+  }
+  .list-tag.black { border-left: 2px solid #ef4444; color: #f87171; }
+  .list-tag.white { border-left: 2px solid #f4a0b8; color: #f9c2d0; }
+  .list-tag.apikey { border-left: 2px solid #f59e0b; color: #fbbf24; }
+  .tag-remove { cursor: pointer; color: #6a4050; font-size: 10px; }
+  .tag-remove:hover { color: #ef4444; }
+  .list-tags { min-height: 32px; }
+
+  /* Range inputs */
+  .range-row { display: flex; gap: 8px; align-items: center; }
+  .range-row input { flex: 1; }
+  .range-sep { color: #5a3040; }
+
+  /* ---- API Key management ---- */
+  .key-card {
+    background: rgba(20, 12, 18, 0.80);
+    border: 1px solid rgba(200, 100, 130, 0.18);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .key-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .key-code {
+    flex: 1; font-family: 'Courier New', monospace; font-size: 11px;
+    color: #fbbf24; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .key-meta { font-size: 10px; color: #8a6070; margin-top: 2px; }
+  .key-meta span { margin-right: 10px; }
+  .key-meta .expired { color: #ef4444; }
+  .key-meta .active-badge { color: #22c55e; }
+  .key-copy-btn { cursor: pointer; font-size: 13px; opacity: 0.6; }
+  .key-copy-btn:hover { opacity: 1; }
+  .key-revoke-btn { cursor: pointer; font-size: 11px; color: #ef4444; opacity: 0.7; }
+  .key-revoke-btn:hover { opacity: 1; }
+  .keys-empty { padding: 20px; text-align: center; color: #5a3040; font-size: 12px; }
+  .keys-list { max-height: 240px; overflow-y: auto; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: rgba(5, 3, 8, 0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(200, 100, 140, 0.3); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <img src="icons/icon48.png" class="header-icon" alt="icon">
+  <div>
+    <div class="header-title">7ex Parser</div>
+    <div class="header-sub">Party Finder Monitor</div>
+  </div>
+  <div id="statusDot" class="status-dot"></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="monitor">📡 Monitor</div>
+  <div class="tab" data-tab="filters">⚙️ Filters</div>
+  <div class="tab" data-tab="lists">📋 Lists</div>
+  <div class="tab" data-tab="keys">🔑 Keys</div>
+</div>
+
+<!-- ============ MONITOR ============ -->
+<div class="tab-content active" id="tab-monitor">
+
+  <div class="section">
+    <div class="start-stop-row">
+      <button class="btn btn-success" id="startBtn">▶ START</button>
+      <button class="btn btn-danger" id="stopBtn" disabled>■ STOP</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num green" id="statPassed">0</div><div class="stat-label">Passed</div></div>
+    <div class="stat-box"><div class="stat-num red" id="statKicked">0</div><div class="stat-label">Kicked</div></div>
+    <div class="stat-box"><div class="stat-num yellow" id="statChecking">0</div><div class="stat-label">Checking</div></div>
+  </div>
+
+  <!-- Kick failed warning -->
+  <div id="kickWarn" class="kick-warn">
+    <span class="kick-warn-icon">⚠️</span>
+    <span id="kickWarnText">Open the FACEIT tab for kick to take effect</span>
+  </div>
+
+  <div class="players-header">
+    <div>Nick</div>
+    <div style="text-align:right">CS2 Buff $</div>
+    <div style="text-align:right">Time</div>
+    <div style="text-align:right">Status</div>
+  </div>
+  <div class="players-list" id="playersList">
+    <div class="empty-state">Start the parser to monitor the lobby</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Log</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+</div>
+
+<!-- ============ FILTERS ============ -->
+<div class="tab-content" id="tab-filters">
+  <div class="section">
+    <div class="section-title">CS2 Inventory Value (Buff $)</div>
+    <div class="range-row">
+      <input type="number" id="minCs2" placeholder="Min" value="0" min="0">
+      <span class="range-sep">—</span>
+      <input type="number" id="maxCs2" placeholder="Max" value="">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Actions</div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Kick if filter not passed</div>
+      </div>
+      <input type="checkbox" id="kickOnFail" checked>
+    </div>
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Kick if inventory is private</div>
+        <div class="toggle-sub">Or if price could not be retrieved</div>
+      </div>
+      <input type="checkbox" id="kickIfNoData">
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="btn btn-primary" id="saveFilters" style="width:100%">💾 Save Filters</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Inventory Test</div>
+    <div class="control-row">
+      <input type="text" id="testSteamId" class="full" placeholder="Steam ID64 or Steam profile URL">
+      <button class="btn btn-ghost btn-sm" id="testBtn">Test</button>
+    </div>
+    <div class="test-result" id="testResult">Enter Steam ID64 / profile URL and click Test</div>
+  </div>
+</div>
+
+<!-- ============ LISTS ============ -->
+<div class="tab-content" id="tab-lists">
+  <div class="section">
+    <div class="section-title">🚫 Blacklist — kick immediately</div>
+    <div class="control-row">
+      <input type="text" id="blacklistInput" class="full" placeholder="Nickname">
+      <button class="btn btn-danger btn-sm" id="addBlack">Add</button>
+    </div>
+    <div class="list-tags" id="blacklistItems"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⭐ Whitelist — always allow</div>
+    <div class="control-row">
+      <input type="text" id="whitelistInput" class="full" placeholder="Nickname">
+      <button class="btn btn-primary btn-sm" id="addWhite">Add</button>
+    </div>
+    <div class="list-tags" id="whitelistItems"></div>
+  </div>
+</div>
+
+<!-- ============ KEYS ============ -->
+<div class="tab-content" id="tab-keys">
+  <div class="section">
+    <div class="section-title">Generate Access Key</div>
+    <div class="control-row">
+      <select id="keyDuration" style="flex:1">
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+      </select>
+      <button class="btn btn-primary" id="genKeyBtn">🔑 Generate</button>
+    </div>
+    <div id="newKeyResult" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(15,10,18,0.85);border-radius:6px;font-size:11px;">
+      <div style="color:#8a6070;margin-bottom:4px;">New key — copy it now, it won't be shown again:</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <code id="newKeyCode" style="color:#fbbf24;font-size:11px;flex:1;word-break:break-all;"></code>
+        <span id="newKeyCopy" class="key-copy-btn" title="Copy">📋</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="padding-bottom:0">
+    <div class="section-title">Active Keys</div>
+  </div>
+  <div class="keys-list" id="keysList">
+    <div class="keys-empty">No keys generated yet</div>
+  </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
