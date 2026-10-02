@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "7ex Parser",
+  "version": "1.6.0",
+  "description": "7ex Parser lobby monitor - auto-kick by CS2 inventory value (Steam inventory + Buff163 prices); also shows Dota2 inventory value (Steam Market prices) for info",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.faceit.com/*",
+    "https://open.faceit.com/*",
+    "https://api.faceit.com/*",
+    "https://steamcommunity.com/*",
+    "https://prices.csgotrader.app/*",
+    "https://cs2cap.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.faceit.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [{
+    "resources": ["icons/*"],
+    "matches": ["https://*.faceit.com/*"]
+  }]
+}
